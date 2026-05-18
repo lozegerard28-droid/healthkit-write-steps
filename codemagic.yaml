@@ -16,12 +16,12 @@ workflows:
           CODE_SIGN_STYLE=Manual \
           CODE_SIGN_IDENTITY=""
       - |
-        xcodebuild -exportArchive \
-          -archivePath /tmp/StepsWrite.xcarchive \
-          -exportPath /tmp/export \
-          -exportOptionsPlist $CM_BUILD_DIR/StepsWrite/export.plist
+        mkdir -p /tmp/Payload
+        cp -R /tmp/StepsWrite.xcarchive/Products/Applications/* /tmp/Payload/
+        cd /tmp
+        zip -r /tmp/StepsWrite.ipa Payload/
     artifacts:
-      - /tmp/export/*.ipa
+      - /tmp/StepsWrite.ipa
     publishing:
       email:
         recipients:
