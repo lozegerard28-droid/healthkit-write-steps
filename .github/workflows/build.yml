@@ -1,0 +1,59 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build and Archive
+        run: |
+          xcodebuild -project StepsWrite.xcodeproj \
+            -scheme StepsWrite \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath ${{ runner.temp }}/StepsWrite.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="" \
+            -allowProvisioningUpdates
+
+      - name: Create ExportOptions.plist
+        run: |
+          cat > ${{ runner.temp }}/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ${{ runner.temp }}/StepsWrite.xcarchive \
+            -exportPath ${{ runner.temp }}/IPA \
+            -exportOptionsPlist ${{ runner.temp }}/ExportOptions.plist \
+            -allowProvisioningUpdates
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: StepsWrite-IPA
+          path: ${{ runner.temp }}/IPA/*.ipa
