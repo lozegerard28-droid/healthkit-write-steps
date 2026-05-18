@@ -1,0 +1,55 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build archive (unsigned)
+        run: |
+          xcodebuild -project StepsWrite.xcodeproj \
+            -scheme StepsWrite \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $RUNNER_TEMP/StepsWrite.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="" \
+            IPHONEOS_DEPLOYMENT_TARGET=15.0
+
+      - name: Export IPA
+        run: |
+          mkdir -p $RUNNER_TEMP/export
+          cat > $RUNNER_TEMP/export.plist << ENDPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>development</string>
+  <key>signingStyle</key>
+  <string>manual</string>
+  <key>stripSwiftSymbols</key>
+  <true/>
+</dict>
+</plist>
+ENDPLIST
+          /usr/bin/xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/StepsWrite.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist $RUNNER_TEMP/export.plist
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: StepsWrite
+          path: $RUNNER_TEMP/export/*.ipa
+          if-no-files-found: error
