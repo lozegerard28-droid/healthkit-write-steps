@@ -30,8 +30,9 @@ class HealthStore {
     func writeSteps(startDate: Date, stepsToAdd: Double) {
         let stepType = HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!
         
-        let endDate = startDate + 60 * 60 // add 1h to startDate
-        let stepsSample = HKQuantitySample(type: stepType, quantity: HKQuantity.init(unit: HKUnit.count(), doubleValue: stepsToAdd), start: startDate, end: endDate)
+        let endDate = startDate + 60 * 60
+        let metadata: [String: Any] = [HKMetadataKeyWasUserEntered: false]
+        let stepsSample = HKQuantitySample(type: stepType, quantity: HKQuantity(unit: HKUnit.count(), doubleValue: stepsToAdd), start: startDate, end: endDate, metadata: metadata)
         
         // After creating the sample, we call healthStore.save()
         
